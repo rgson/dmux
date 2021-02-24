@@ -1,0 +1,41 @@
+#!/bin/zsh
+
+# No arguments; show the usage instructions
+if [ $# -lt 1 ]; then
+	echo >&2 "Usage: $0 DIRECTORY..."
+	exit 1
+fi
+
+cmd=
+for d in $@; do
+
+	# It only makes sense to provide directories
+	if [ ! -d $d ]; then
+		echo >&2 "Skipping '$d': not a directory."
+		continue
+	fi
+
+	# Resolve full path
+	d=$(realpath $d)
+
+	if [ -z $cmd ]; then
+		# The first one will be in a new window
+		cmd="tmux new-window -c ${d:q}"
+	else
+		# Subsequent ones will be in new panes in that same window
+		cmd+=" \; split-window -f -c ${d:q}"
+	fi
+
+done
+
+# Nothing to do; just quit
+if [ -z $cmd ]; then
+	exit 2
+fi
+
+# Rearrange panes into a usable layout
+cmd+=" \; select-layout tiled"
+# Send user input to all of them
+cmd+=" \; setw synchronize-panes on"
+
+eval $cmd
